@@ -7,10 +7,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api/compile': {
-        target: 'https://texlive.net/cgi-bin/latexcgi',
+      '/cgi-bin': {
+        target: 'https://texlive.net',
         changeOrigin: true,
-        rewrite: () => '',
       }
     }
   }

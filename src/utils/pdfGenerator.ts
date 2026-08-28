@@ -377,7 +377,7 @@ export const generatePdf = async (latexCode: string): Promise<{ pdfBytes: Uint8A
     formData.append('engine', 'pdflatex');
     formData.append('return', 'pdf');
 
-    const response = await fetch('/api/compile', {
+    const response = await fetch('/cgi-bin/latexcgi', {
       method: 'POST',
       body: formData,
     });

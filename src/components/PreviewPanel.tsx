@@ -136,9 +136,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // Standard US Letter page aspect ratio parameters
   const targetW = 612;
   const targetH = 792;
-  const padding = 16;
-  const availableW = Math.max(100, dimensions.width - padding * 2);
-  const availableH = Math.max(100, dimensions.height - padding * 2);
+  const availableW = dimensions.width;
+  const availableH = dimensions.height;
 
   // Optimal scale factor to fit a single page inside the container window
   const scale = Math.min(availableW / targetW, availableH / targetH);
@@ -148,7 +147,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="h-full border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-xs relative flex flex-col items-center justify-center p-0"
+      className="h-full border border-slate-200 bg-white rounded-xl overflow-hidden shadow-xs relative flex flex-col items-center justify-center p-0"
     >
       
       {/* Floating compilation indicator status overlay */}
@@ -176,8 +175,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </pre>
         </div>
       ) : pdfUrl && pdfDoc ? (
-        <div className="w-full h-full overflow-y-auto flex items-start justify-center p-4">
-          <div className="flex flex-col gap-4 items-center justify-start min-h-full">
+        <div className="w-full h-full overflow-y-auto flex items-start justify-center p-0">
+          <div className="flex flex-col gap-0 items-center justify-start min-h-full">
             {Array.from({ length: pdfDoc.numPages }).map((_, idx) => (
               <PdfPageCanvas
                 key={`${pdfUrl}-page-${idx + 1}`}

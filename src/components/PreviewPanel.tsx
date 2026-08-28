@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface PreviewPanelProps {
@@ -16,8 +16,65 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   compiling,
   pageCount
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 600, height: 800 });
+
+  // Measure container dimensions dynamically
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setDimensions({
+          width: entry.contentRect.width || 600,
+          height: entry.contentRect.height || 800,
+        });
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Standard Letter page dimensions (width: 612px, height: 792px)
+  const targetW = 612;
+  const targetH = 792;
+  const availableW = dimensions.width;
+  const availableH = dimensions.height;
+
+  // Optimal scale factor to fit the 612x792 single page in the available space
+  const scale = Math.min(availableW / targetW, availableH / targetH);
+
+  // The wrapper width is the scaled width of the page
+  const wrapperW = targetW * scale;
+  const scaledHeight = targetH * Math.max(1, pageCount) * scale;
+
+  const wrapperStyle: React.CSSProperties = {
+    width: `${wrapperW}px`,
+    height: '100%',
+    position: 'relative',
+    overflowY: pageCount > 1 ? 'auto' : 'hidden',
+    overflowX: 'hidden',
+    backgroundColor: '#ffffff',
+  };
+
+  // The iframe is rendered at exactly 612 width, then scaled down by "scale"
+  const iframeStyle: React.CSSProperties = {
+    width: `${targetW}px`,
+    height: `${targetH * Math.max(1, pageCount)}px`,
+    transform: `scale(${scale})`,
+    transformOrigin: 'top left',
+    border: 'none',
+    backgroundColor: '#ffffff',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+  };
+
   return (
-    <div className="h-full border border-slate-200 bg-white rounded-xl overflow-hidden shadow-xs relative flex flex-col items-center justify-center">
+    <div 
+      ref={containerRef}
+      className="h-full border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-xs relative flex flex-col items-center justify-center"
+    >
       
       {/* Floating compilation indicator status overlay */}
       <div className="absolute top-3 right-3 z-10 flex gap-2 pointer-events-none select-none">
@@ -44,11 +101,16 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </pre>
         </div>
       ) : pdfUrl ? (
-        <iframe
-          src={`${pdfUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
-          className={`w-full h-full border-none bg-white ${isDragging ? 'pointer-events-none' : ''}`}
-          title="LaTeX PDF Preview"
-        />
+        <div style={wrapperStyle} className="scroll-container">
+          <div style={{ height: `${scaledHeight}px`, width: '100%', position: 'relative' }}>
+            <iframe
+              src={`${pdfUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
+              style={iframeStyle}
+              className={isDragging ? 'pointer-events-none' : ''}
+              title="LaTeX PDF Preview"
+            />
+          </div>
+        </div>
       ) : (
         <div className="h-full flex flex-col items-center justify-center bg-transparent select-none">
           <RefreshCw className="w-6 h-6 text-[#0284c7] animate-spin mb-2" />

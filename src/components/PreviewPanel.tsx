@@ -50,7 +50,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         </div>
       ) : pdfUrl ? (
         <iframe
-          src={`${pdfUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
+          src={`${pdfUrl}#view=FitV&toolbar=0&navpanes=0&scrollbar=0`}
           className={`w-full h-full border-none bg-white ${isDragging ? 'pointer-events-none' : ''}`}
           title="LaTeX PDF Preview"
         />

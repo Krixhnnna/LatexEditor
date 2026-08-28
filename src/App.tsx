@@ -349,7 +349,7 @@ export const App: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
       const containerWidth = window.innerWidth;
-      const newWidthPercent = Math.max(30, Math.min(70, (e.clientX / containerWidth) * 100));
+      const newWidthPercent = Math.max(40, Math.min(60, (e.clientX / containerWidth) * 100));
       setLeftWidth(newWidthPercent);
     };
 

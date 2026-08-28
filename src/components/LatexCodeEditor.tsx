@@ -53,7 +53,7 @@ export const LatexCodeEditor: React.FC<LatexCodeEditorProps> = ({ code, onChange
           <span className="text-[10px] text-zinc-500 font-mono">UTF-8</span>
           <button
             onClick={handleCompile}
-            className="flex items-center gap-1 bg-[#38bdf8] text-[#0e1117] text-[10px] font-bold py-1.5 px-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_rgba(255,255,255,0.85)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.85)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
+            className="flex items-center gap-1 bg-[#38bdf8] text-[#0e1117] text-[10px] font-bold py-1.5 px-3.5 rounded-xl border-2 border-white/60 shadow-[3px_3px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
           >
             <Play className="w-3 h-3 text-[#0e1117] fill-current" /> Recompile
           </button>

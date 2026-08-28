@@ -10,6 +10,12 @@
     <meta name="description" content="Build your professional resume entirely in your browser. Features form-based LaTeX templating, instant client-side PDF generation, live syntax checking, and rule-based ATS readiness audits with Job Description keyword matches. 100% private." />
     <meta name="keywords" content="latex, resume builder, CV editor, ats scorer, local-first, pdf-lib, typescript, private resume, tech resume template" />
     <meta name="author" content="TeXCraft Team" />
+    
+    <!-- PDF.js Client-Side PDF Renderer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
   </head>
   <body>
     <div id="root"></div>

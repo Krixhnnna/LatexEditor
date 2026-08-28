@@ -1,6 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
+
 interface PreviewPanelProps {
   pdfUrl: string;
   pdfError: string;
@@ -9,15 +15,79 @@ interface PreviewPanelProps {
   pageCount: number;
 }
 
+interface PdfPageCanvasProps {
+  pdf: any;
+  pageNum: number;
+  width: number;
+  height: number;
+}
+
+// Sub-component to render a single PDF page onto a canvas with high-DPI support
+const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({ pdf, pageNum, width, height }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const renderPage = async () => {
+      try {
+        const page = await pdf.getPage(pageNum);
+        if (!isCurrent) return;
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        // Calculate scale to match target page width
+        const viewport = page.getViewport({ scale: 1.0 });
+        const scaleFactor = width / viewport.width;
+        const scaledViewport = page.getViewport({ scale: scaleFactor });
+
+        // Account for Retina / High-DPI screens
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        context.scale(dpr, dpr);
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: scaledViewport,
+        };
+        await page.render(renderContext).promise;
+      } catch (err) {
+        console.error(`Page ${pageNum} render error:`, err);
+      }
+    };
+
+    renderPage();
+    return () => {
+      isCurrent = false;
+    };
+  }, [pdf, pageNum, width, height]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      className="shadow-sm border border-slate-300 bg-white rounded-xs select-none pointer-events-none"
+    />
+  );
+};
+
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({ 
   pdfUrl, 
   pdfError, 
-  isDragging,
+  isDragging: _isDragging,
   compiling,
   pageCount
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 800 });
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   // Measure container dimensions dynamically
   useEffect(() => {
@@ -34,25 +104,46 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Standard Letter page dimensions (width: 612px, height: 792px)
+  // Fetch and load the PDF document using PDF.js
+  useEffect(() => {
+    if (!pdfUrl || !window.pdfjsLib) return;
+
+    let isCurrent = true;
+    setLoadingPdf(true);
+
+    const loadDoc = async () => {
+      try {
+        const loadingTask = window.pdfjsLib.getDocument(pdfUrl);
+        const doc = await loadingTask.promise;
+        if (isCurrent) {
+          setPdfDoc(doc);
+        }
+      } catch (err) {
+        console.error('Error loading PDF document:', err);
+      } finally {
+        if (isCurrent) {
+          setLoadingPdf(false);
+        }
+      }
+    };
+
+    loadDoc();
+    return () => {
+      isCurrent = false;
+    };
+  }, [pdfUrl]);
+
+  // Standard US Letter page aspect ratio parameters
   const targetW = 612;
   const targetH = 792;
-  const availableW = dimensions.width;
-  const availableH = dimensions.height;
+  const padding = 16;
+  const availableW = Math.max(100, dimensions.width - padding * 2);
+  const availableH = Math.max(100, dimensions.height - padding * 2);
 
-  // Scale factor to fit the page inside the available container space
+  // Optimal scale factor to fit a single page inside the container window
   const scale = Math.min(availableW / targetW, availableH / targetH);
   const wrapperW = targetW * scale;
   const wrapperH = targetH * scale;
-
-  const wrapperStyle: React.CSSProperties = {
-    width: `${wrapperW}px`,
-    height: `${wrapperH}px`,
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
-  };
 
   return (
     <div 
@@ -62,7 +153,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       
       {/* Floating compilation indicator status overlay */}
       <div className="absolute top-3 right-3 z-10 flex gap-2 pointer-events-none select-none">
-        {compiling && (
+        {(compiling || loadingPdf) && (
           <span className="text-[9px] font-bold uppercase bg-white/95 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1.5 animate-pulse">
             <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0284c7]" /> Compiling
           </span>
@@ -84,13 +175,19 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             {pdfError}
           </pre>
         </div>
-      ) : pdfUrl ? (
-        <div style={wrapperStyle}>
-          <iframe
-            src={`${pdfUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
-            className={`w-full h-full border-none bg-white ${isDragging ? 'pointer-events-none' : ''}`}
-            title="LaTeX PDF Preview"
-          />
+      ) : pdfUrl && pdfDoc ? (
+        <div className="w-full h-full overflow-y-auto flex items-start justify-center p-4">
+          <div className="flex flex-col gap-4 items-center justify-start min-h-full">
+            {Array.from({ length: pdfDoc.numPages }).map((_, idx) => (
+              <PdfPageCanvas
+                key={`${pdfUrl}-page-${idx + 1}`}
+                pdf={pdfDoc}
+                pageNum={idx + 1}
+                width={wrapperW}
+                height={wrapperH}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="h-full flex flex-col items-center justify-center bg-transparent select-none">

@@ -125,9 +125,9 @@ export const App: React.FC = () => {
         
         setPdfUrl(URL.createObjectURL(blob));
         setPageCount(result.pageCount);
-      } catch (err) {
+      } catch (err: any) {
         console.error('PDF Compilation Error:', err);
-        setPdfError('Failed to compile PDF. Check your LaTeX diagnostics.');
+        setPdfError(err.message || 'Failed to compile PDF. Check your LaTeX diagnostics.');
       } finally {
         setCompiling(false);
       }

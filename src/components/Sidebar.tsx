@@ -138,14 +138,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex gap-2">
                 <button 
                   type="submit" 
-                  className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold py-1.5 px-3 rounded transition-all cursor-pointer shadow-sm"
+                  className="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-1.5 px-3 rounded border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
                 >
                   Create
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold py-1.5 px-3 rounded transition-all cursor-pointer border border-zinc-700"
+                  className="flex-1 bg-zinc-800 text-zinc-300 text-xs font-semibold py-1.5 px-3 rounded border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -235,7 +235,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={triggerDownloadPdf}
             disabled={pdfGenerating}
-            className="w-full flex items-center justify-center gap-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold py-2 px-4 rounded-lg shadow-sm transition-all cursor-pointer disabled:opacity-50 text-xs"
+            className="w-full flex items-center justify-center gap-2 bg-zinc-100 text-zinc-950 font-bold py-2 px-4 rounded-lg border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer disabled:opacity-50 text-xs"
           >
             {pdfGenerating ? (
               <>
@@ -253,14 +253,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onDownloadTex}
-              className="flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-zinc-300 text-xs font-semibold py-2 px-3 rounded-lg transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 bg-zinc-800 border-2 border-black text-zinc-300 text-xs font-semibold py-2 px-3 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-zinc-400" />
               LaTeX (.tex)
             </button>
             <button
               onClick={handleCopyText}
-              className="flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-zinc-300 text-xs font-semibold py-2 px-3 rounded-lg transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 bg-zinc-800 border-2 border-black text-zinc-300 text-xs font-semibold py-2 px-3 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
             >
               {copiedText ? (
                 <>
@@ -278,7 +278,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Local import/export configuration backup */}
           <div className="flex gap-2 border-t border-zinc-800 pt-3 text-[11px] text-zinc-500">
-            <label className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 py-1.5 rounded cursor-pointer transition-all">
+            <label className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 border-2 border-black py-1.5 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer text-zinc-300">
               <Upload className="w-3 h-3 text-zinc-400" />
               Import Backup
               <input
@@ -290,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </label>
             <button
               onClick={onExportJson}
-              className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 py-1.5 rounded cursor-pointer transition-all"
+              className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 border-2 border-black py-1.5 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer text-zinc-300"
             >
               <Download className="w-3 h-3 text-zinc-400" />
               Export Backup

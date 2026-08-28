@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface PreviewPanelProps {
@@ -16,30 +16,49 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   compiling,
   pageCount
 }) => {
-  // Wrapper style to fill the preview container exactly
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 600, height: 800 });
+
+  // Measure container dimensions dynamically
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setDimensions({
+          width: entry.contentRect.width || 600,
+          height: entry.contentRect.height || 800,
+        });
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Standard Letter page dimensions (width: 612px, height: 792px)
+  const targetW = 612;
+  const targetH = 792;
+  const availableW = dimensions.width;
+  const availableH = dimensions.height;
+
+  // Scale factor to fit the page inside the available container space
+  const scale = Math.min(availableW / targetW, availableH / targetH);
+  const wrapperW = targetW * scale;
+  const wrapperH = targetH * scale;
+
   const wrapperStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
+    width: `${wrapperW}px`,
+    height: `${wrapperH}px`,
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: '#ffffff',
-  };
-
-  // Iframe is scaled slightly larger and offset to crop out the native browser PDF viewer's 
-  // default grey backgrounds, margins, scrollbars, and black boundary shadow borders.
-  const iframeStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: '-56px',
-    left: '-56px',
-    width: 'calc(100% + 112px)',
-    height: 'calc(100% + 112px)',
-    border: 'none',
-    backgroundColor: '#ffffff',
-    transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
   };
 
   return (
-    <div className="h-full border border-slate-200 bg-white rounded-xl overflow-hidden shadow-xs relative flex flex-col items-center justify-center">
+    <div 
+      ref={containerRef}
+      className="h-full border border-slate-200 bg-slate-50 rounded-xl overflow-hidden shadow-xs relative flex flex-col items-center justify-center p-0"
+    >
       
       {/* Floating compilation indicator status overlay */}
       <div className="absolute top-3 right-3 z-10 flex gap-2 pointer-events-none select-none">
@@ -69,8 +88,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <div style={wrapperStyle}>
           <iframe
             src={`${pdfUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
-            style={iframeStyle}
-            className={isDragging ? 'pointer-events-none' : ''}
+            className={`w-full h-full border-none bg-white ${isDragging ? 'pointer-events-none' : ''}`}
             title="LaTeX PDF Preview"
           />
         </div>

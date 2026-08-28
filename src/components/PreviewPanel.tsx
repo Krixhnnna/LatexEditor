@@ -35,22 +35,37 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   }, []);
 
   // Standard Letter page dimensions (width: 612px, height: 792px)
-  // Calculate optimal scale factor to fit the full page in the container
-  const padding = 16;
   const targetW = 612;
   const targetH = 792;
+  const padding = 16;
   const availableW = Math.max(100, dimensions.width - padding * 2);
   const availableH = Math.max(100, dimensions.height - padding * 2);
 
-  const scale = Math.min(1, availableW / targetW, availableH / targetH);
+  // Optimal scale factor to fit the 612x792 page in the available space
+  const scale = Math.min(availableW / targetW, availableH / targetH);
 
+  // The wrapper matches the visually scaled Letter dimensions
+  const wrapperStyle: React.CSSProperties = {
+    width: `${targetW * scale}px`,
+    height: `${targetH * scale}px`,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+    borderRadius: '4px',
+  };
+
+  // The iframe is rendered at exactly 612x792, then scaled down by "scale"
   const iframeStyle: React.CSSProperties = {
     width: `${targetW}px`,
-    height: `${availableH / scale}px`,
+    height: `${targetH}px`,
     transform: `scale(${scale})`,
-    transformOrigin: 'top center',
+    transformOrigin: 'top left',
     border: 'none',
     backgroundColor: '#ffffff',
+    position: 'absolute',
+    top: 0,
+    left: 0,
     transition: isDragging ? 'none' : 'transform 0.15s ease-out',
   };
 
@@ -64,7 +79,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       <div className="absolute top-3 right-3 z-10 flex gap-2 pointer-events-none select-none">
         {compiling && (
           <span className="text-[9px] font-bold uppercase bg-white/95 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1.5 animate-pulse">
-            <RefreshCw className="w-3 h-3 animate-spin text-[#0284c7]" /> Compiling
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0284c7]" /> Compiling
           </span>
         )}
         {pageCount > 1 && !compiling && (
@@ -85,12 +100,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </pre>
         </div>
       ) : pdfUrl ? (
-        <div 
-          className="w-full h-full overflow-hidden flex items-start justify-center"
-          style={{ height: `${availableH}px`, width: `${availableW}px` }}
-        >
+        <div style={wrapperStyle}>
           <iframe
-            src={`${pdfUrl}#view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
+            src={`${pdfUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
             style={iframeStyle}
             className={isDragging ? 'pointer-events-none' : ''}
             title="LaTeX PDF Preview"

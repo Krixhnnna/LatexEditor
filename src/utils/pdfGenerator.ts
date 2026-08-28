@@ -79,29 +79,29 @@ const extractBraces = (text: string, count: number): string[] => {
   return results;
 };
 
-export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
+// Offline draw simulator using pdf-lib
+const compileOfflineSimulator = async (resume: Resume): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
   const pdfDoc = await PDFDocument.create();
   const latex = resume.latexCode || '';
 
-  // 1. Detect typography and layout sizes from the LaTeX code!
   let fontFamily = 'serif';
   if (latex.includes('inter') || latex.includes('sans')) {
     fontFamily = 'sans';
   }
 
-  let marginSize = 0.5; // default
+  let marginSize = 0.5;
   const marginMatch = latex.match(/margin\s*=\s*([\d.]+)\s*in/i);
   if (marginMatch) {
     marginSize = parseFloat(marginMatch[1]);
   }
 
-  let fontSize = 11; // default
+  let fontSize = 11;
   const fontClassMatch = latex.match(/\\documentclass\[[^\]]*?(\d+)pt[^\]]*?\]/);
   if (fontClassMatch) {
     fontSize = parseInt(fontClassMatch[1]);
   }
 
-  const paperWidth = latex.includes('a4paper') ? 595.27 : 612.0; // A4 vs Letter
+  const paperWidth = latex.includes('a4paper') ? 595.27 : 612.0;
   const paperHeight = latex.includes('a4paper') ? 841.89 : 792.0;
   const marginPoints = marginSize * 72;
 
@@ -132,7 +132,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
   };
   ctx.pages.push(ctx.page);
 
-  // Helper to add a new page if we run out of vertical room
   const ensureSpace = (heightNeeded: number) => {
     const bottomLimit = ctx.margin;
     if (ctx.y - heightNeeded < bottomLimit) {
@@ -143,7 +142,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     }
   };
 
-  // Helper to draw centered text
   const drawCenteredText = (text: string, fontSize: number, font: PDFFont, yOffset = 0) => {
     const textWidth = font.widthOfTextAtSize(text, fontSize);
     const x = (ctx.width - textWidth) / 2;
@@ -156,7 +154,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     });
   };
 
-  // Helper to draw section header line
   const drawSectionHeader = (title: string) => {
     ensureSpace(ctx.lineHeight * 2.5);
     ctx.y -= ctx.lineHeight * 1.5;
@@ -180,7 +177,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     ctx.y -= ctx.lineHeight * 0.9;
   };
 
-  // 2. Parse LaTeX body
   const docStart = latex.indexOf('\\begin{document}');
   const docEnd = latex.indexOf('\\end{document}');
   const bodyText = docStart !== -1 
@@ -192,9 +188,8 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
-    if (!line || line.startsWith('%')) continue; // skip comments
+    if (!line || line.startsWith('%')) continue;
 
-    // Detect center environment
     if (line.includes('\\begin{center}')) {
       inCenter = true;
       continue;
@@ -204,14 +199,12 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       continue;
     }
 
-    // Parse section heading
     if (line.startsWith('\\section{')) {
       const sectionName = extractBraces(line, 1)[0] || '';
       drawSectionHeader(unescapeLatex(sectionName));
       continue;
     }
 
-    // Parse resumeSubheading
     if (line.includes('\\resumeSubheading')) {
       const args = extractBraces(line, 4);
       if (args.length > 0) {
@@ -221,13 +214,11 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
         const dates = unescapeLatex(args[3] || '');
 
         ensureSpace(ctx.lineHeight * 2.2);
-        // Row 1: Company + Location
         ctx.page.drawText(company, { x: ctx.margin, y: ctx.y, size: ctx.fontSize, font: ctx.fontBold });
         const locWidth = ctx.fontRegular.widthOfTextAtSize(location, ctx.fontSize);
         ctx.page.drawText(location, { x: ctx.width - ctx.margin - locWidth, y: ctx.y, size: ctx.fontSize, font: ctx.fontRegular });
         ctx.y -= ctx.lineHeight;
 
-        // Row 2: Role + Dates
         ctx.page.drawText(role, { x: ctx.margin, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontItalic });
         const dateWidth = ctx.fontRegular.widthOfTextAtSize(dates, ctx.fontSize - 0.5);
         ctx.page.drawText(dates, { x: ctx.width - ctx.margin - dateWidth, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular });
@@ -236,7 +227,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       continue;
     }
 
-    // Parse resumeProjectHeading
     if (line.includes('\\resumeProjectHeading')) {
       const args = extractBraces(line, 2);
       if (args.length > 0) {
@@ -269,7 +259,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       continue;
     }
 
-    // Parse resumeItem
     if (line.includes('\\resumeItem') || line.startsWith('\\item')) {
       let bulletText = '';
       if (line.includes('\\resumeItem')) {
@@ -294,7 +283,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       continue;
     }
 
-    // Center header parsing
     if (inCenter) {
       let cleanLine = line.replace(/\\\\/g, '').replace(/\\vspace\{[^}]*\}/g, '').trim();
 
@@ -328,7 +316,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       continue;
     }
 
-    // Parse technical skills line
     if (line.includes('\\textbf{') && line.includes('}:')) {
       const catMatch = line.match(/\\textbf\{([^}]+)\}:/);
       if (catMatch) {
@@ -351,7 +338,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       continue;
     }
 
-    // Parse standard text paragraph
     let plainParagraph = line
       .replace(/\\small\{([^}]+)\}/g, '$1')
       .replace(/\\small/g, '')
@@ -375,4 +361,61 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     pdfBytes,
     pageCount: ctx.pages.length,
   };
+};
+
+// Main entry point for PDF generation
+export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
+  const latex = resume.latexCode || '';
+
+  try {
+    const formData = new FormData();
+    // Convert Unix \n to Windows \r\n to prevent "Bad form" errors from the CGI compiler
+    const cleanCode = latex.replace(/\r?\n/g, '\r\n');
+    const codeBlob = new Blob([cleanCode], { type: 'text/plain' });
+
+    formData.append('filecontents[]', codeBlob, 'document.tex');
+    formData.append('filename[]', 'document.tex');
+    formData.append('engine', 'pdflatex');
+    formData.append('return', 'pdf');
+
+    const response = await fetch('https://texlive.net/cgi-bin/latexcgi', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (response.ok) {
+      const contentType = response.headers.get('Content-Type') || '';
+      if (contentType.includes('pdf')) {
+        const arrayBuffer = await response.arrayBuffer();
+        const pdfBytes = new Uint8Array(arrayBuffer);
+
+        // Load the PDF via pdf-lib to count its pages
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pageCount = pdfDoc.getPageCount();
+
+        return {
+          pdfBytes,
+          pageCount,
+        };
+      } else {
+        // Compile failed: read and extract errors from log
+        const logText = await response.text();
+        const errorLines = logText.split('\n').filter(line => line.startsWith('!') || line.includes('Error:'));
+        const errorMessage = errorLines.length > 0 
+          ? errorLines.slice(0, 3).join('\n') 
+          : 'LaTeX compiler engine reported a syntax error. Check your logs.';
+        throw new Error(errorMessage);
+      }
+    } else {
+      throw new Error(`HTTP ${response.status} returned from LaTeX compilation service.`);
+    }
+  } catch (apiError: any) {
+    console.warn("TeXLive.net CGI compilation failed, falling back to local draw engine:", apiError);
+    // If the error is a real LaTeX compiler syntax error, throw it so the user sees the logs!
+    if (apiError.message && (apiError.message.includes('LaTeX') || apiError.message.includes('syntax') || apiError.message.includes('!'))) {
+      throw apiError;
+    }
+    // Otherwise (e.g. offline, network error), use the local draw simulator
+    return compileOfflineSimulator(resume);
+  }
 };

@@ -37,6 +37,7 @@ export const LatexCodeEditor: React.FC<LatexCodeEditorProps> = ({ code, onChange
     if (newErrors.length > 0) {
       setCollapsed(false);
     }
+    onChange(editorVal); // Notify parent component to compile the PDF!
   };
 
   return (

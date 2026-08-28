@@ -278,13 +278,25 @@ export const App: React.FC = () => {
   };
 
   const handleLatexCodeChange = (updatedCode: string) => {
-    // Parse the new LaTeX code back into structured JSON to update the form editor fields in real-time.
-    const parsed = parseLatexToResume(updatedCode, activeResume);
-    const updated = {
-      ...parsed,
+    // Graceful fallback: always preserve the edited text so compilation and state updates succeed
+    let updated = {
+      ...activeResume,
       latexCode: updatedCode,
       lastSaved: Date.now()
     };
+
+    try {
+      if (updatedCode.trim()) {
+        const parsed = parseLatexToResume(updatedCode, activeResume);
+        updated = {
+          ...updated,
+          ...parsed,
+          latexCode: updatedCode // keep the exact code typed by the user
+        };
+      }
+    } catch (err) {
+      console.warn("Failed to reverse-parse LaTeX back to details form fields (gracefully ignored):", err);
+    }
 
     const nextResumes = resumes.map(r => r.id === activeResume.id ? updated : r);
     // Don't clutter history stack with every single key stroke, but persist

@@ -139,8 +139,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const availableW = dimensions.width;
   const availableH = dimensions.height;
 
-  // Optimal scale factor to fit a single page inside the container window
-  const scale = Math.min(availableW / targetW, availableH / targetH);
+  // Optimal scale factor to fit a single page inside the container window (zoomed to 102%)
+  const scale = Math.min(availableW / targetW, availableH / targetH) * 1.02;
   const wrapperW = targetW * scale;
   const wrapperH = targetH * scale;
 

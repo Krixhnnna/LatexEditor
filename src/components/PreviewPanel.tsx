@@ -39,9 +39,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       </div>
 
       {pdfError ? (
-        <div className="h-full flex flex-col items-center justify-center p-4 text-center bg-zinc-950">
-          <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
-          <p className="text-red-700 font-semibold">{pdfError}</p>
+        <div className="h-full flex flex-col p-4 bg-[#0e1117] overflow-y-auto">
+          <div className="flex items-center gap-2 text-red-400 font-semibold text-xs mb-3 select-none">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+            <span>LaTeX Compilation Failed</span>
+          </div>
+          <pre className="flex-1 overflow-auto bg-black/45 p-4 text-left font-mono text-[10px] leading-relaxed text-red-400 rounded-lg border border-red-950/20 whitespace-pre-wrap select-text">
+            {pdfError}
+          </pre>
         </div>
       ) : pdfUrl ? (
         <iframe

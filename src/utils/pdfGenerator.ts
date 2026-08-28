@@ -398,13 +398,9 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
           pageCount,
         };
       } else {
-        // Compile failed: read and extract errors from log
+        // Compile failed: read and return the full console log
         const logText = await response.text();
-        const errorLines = logText.split('\n').filter(line => line.startsWith('!') || line.includes('Error:'));
-        const errorMessage = errorLines.length > 0 
-          ? errorLines.slice(0, 3).join('\n') 
-          : 'LaTeX compiler engine reported a syntax error. Check your logs.';
-        throw new Error(errorMessage);
+        throw new Error(logText || 'LaTeX compiler engine reported an unknown compilation failure.');
       }
     } else {
       throw new Error(`HTTP ${response.status} returned from LaTeX compilation service.`);

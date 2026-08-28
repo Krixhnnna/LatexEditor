@@ -10,7 +10,7 @@ import {
   loadJdText, saveJdText, DEFAULT_TYPOGRAPHY 
 } from './utils/db';
 import { generateLatex } from './utils/latexTemplates';
-import { stripLatexToPlainText } from './utils/latexParser';
+import { stripLatexToPlainText, parseLatexToResume } from './utils/latexParser';
 import { generatePdf } from './utils/pdfGenerator';
 import { 
   Undo2, Redo2, RefreshCw, Menu
@@ -278,9 +278,10 @@ export const App: React.FC = () => {
   };
 
   const handleLatexCodeChange = (updatedCode: string) => {
-    // Direct code edit: do not auto-overwrite from template form state
+    // Parse the new LaTeX code back into structured JSON to update the form editor fields in real-time.
+    const parsed = parseLatexToResume(updatedCode, activeResume);
     const updated = {
-      ...activeResume,
+      ...parsed,
       latexCode: updatedCode,
       lastSaved: Date.now()
     };

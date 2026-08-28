@@ -25,7 +25,7 @@ export const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   
   // --- Resizable Split Pane State ---
-  const [leftWidth, setLeftWidth] = useState<number>(50);
+  const [leftWidth, setLeftWidth] = useState<number>(60);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // --- History (Undo/Redo) State ---

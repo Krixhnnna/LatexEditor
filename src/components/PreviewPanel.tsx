@@ -175,8 +175,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </pre>
         </div>
       ) : pdfUrl && pdfDoc ? (
-        <div className="w-full h-full overflow-y-auto flex items-start justify-center p-0">
-          <div className="flex flex-col gap-0 items-center justify-start min-h-full">
+        <div className="w-full h-full overflow-hidden flex items-center justify-center p-0">
+          <div className="flex flex-col gap-0 items-center justify-center">
             {Array.from({ length: pdfDoc.numPages }).map((_, idx) => (
               <PdfPageCanvas
                 key={`${pdfUrl}-page-${idx + 1}`}

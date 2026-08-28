@@ -512,6 +512,15 @@ export const App: React.FC = () => {
 
       </main>
 
+      {/* Real-time dragging percentage overlay for debugging */}
+      {isDragging && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+          <div className="bg-slate-900 text-white font-mono text-xs px-4 py-2 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none">
+            {Math.round(leftWidth)}% / {Math.round(100 - leftWidth)}%
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -14,7 +14,7 @@ export const DEFAULT_TYPOGRAPHY = {
   paperSize: 'letter' as const,
 };
 
-const createSampleResume = (): Resume => ({
+export const createSampleResume = (): Resume => ({
   id: 'sample-software-engineer',
   name: 'Software Engineer Resume (Sample)',
   templateId: 'classic-latex',

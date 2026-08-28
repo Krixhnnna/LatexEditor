@@ -1,5 +1,4 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'pdf-lib';
-import type { Resume } from '../types';
 
 interface LayoutContext {
   page: PDFPage;
@@ -80,9 +79,9 @@ const extractBraces = (text: string, count: number): string[] => {
 };
 
 // Offline draw simulator using pdf-lib
-const compileOfflineSimulator = async (resume: Resume): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
+const compileOfflineSimulator = async (latexCode: string): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
   const pdfDoc = await PDFDocument.create();
-  const latex = resume.latexCode || '';
+  const latex = latexCode || '';
 
   let fontFamily = 'serif';
   if (latex.includes('inter') || latex.includes('sans')) {
@@ -364,8 +363,8 @@ const compileOfflineSimulator = async (resume: Resume): Promise<{ pdfBytes: Uint
 };
 
 // Main entry point for PDF generation
-export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
-  const latex = resume.latexCode || '';
+export const generatePdf = async (latexCode: string): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
+  const latex = latexCode || '';
 
   try {
     const formData = new FormData();
@@ -412,6 +411,6 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
       throw apiError;
     }
     // Otherwise (e.g. offline, network error), use the local draw simulator
-    return compileOfflineSimulator(resume);
+    return compileOfflineSimulator(latex);
   }
 };

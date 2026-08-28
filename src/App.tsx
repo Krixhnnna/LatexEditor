@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Resume } from './types';
 import { Sidebar } from './components/Sidebar';
-import { ResumeFormEditor } from './components/ResumeFormEditor';
+
 import { LatexCodeEditor } from './components/LatexCodeEditor';
 import { AtsPanel } from './components/AtsPanel';
 import { PreviewPanel } from './components/PreviewPanel';
@@ -20,7 +20,7 @@ export const App: React.FC = () => {
   // --- Core State ---
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [activeId, setActiveId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'form' | 'latex' | 'ats'>('form');
+  const [activeTab, setActiveTab] = useState<'latex' | 'ats'>('latex');
   const [jdText, setJdText] = useState<string>('');
   const [anonymizeMode, setAnonymizeMode] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -444,16 +444,6 @@ export const App: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('form')}
-                  className={`pb-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer border-b-2 ${
-                    activeTab === 'form' 
-                      ? 'border-[#38bdf8] text-slate-100' 
-                      : 'border-transparent text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  Details Form
-                </button>
-                <button
                   onClick={() => setActiveTab('latex')}
                   className={`pb-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer border-b-2 ${
                     activeTab === 'latex' 
@@ -498,12 +488,6 @@ export const App: React.FC = () => {
 
             {/* Pane Content */}
             <div className="flex-1 overflow-hidden h-full">
-              {activeTab === 'form' && (
-                <ResumeFormEditor 
-                  resume={activeResume} 
-                  onChange={handleResumeChange} 
-                />
-              )}
               {activeTab === 'latex' && (
                 <LatexCodeEditor 
                   code={activeResume.latexCode} 

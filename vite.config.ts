@@ -5,5 +5,13 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api/compile': {
+        target: 'https://texlive.net/cgi-bin/latexcgi',
+        changeOrigin: true,
+        rewrite: () => '',
+      }
+    }
+  }
 })
-

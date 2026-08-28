@@ -378,7 +378,7 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     formData.append('engine', 'pdflatex');
     formData.append('return', 'pdf');
 
-    const response = await fetch('https://texlive.net/cgi-bin/latexcgi', {
+    const response = await fetch('/api/compile', {
       method: 'POST',
       body: formData,
     });

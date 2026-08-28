@@ -86,27 +86,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Drawer backdrop overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-zinc-950/40 backdrop-blur-xs z-40 transition-opacity"
+          className="fixed inset-0 bg-slate-900/25 backdrop-blur-xs z-40 transition-opacity"
           onClick={onClose}
         />
       )}
 
-      <aside className={`fixed top-0 bottom-0 left-0 z-50 w-64 border-r border-zinc-800 bg-zinc-900 flex flex-col h-screen overflow-hidden transition-transform duration-300 ease-in-out shadow-2xl text-zinc-100 ${
+      <aside className={`fixed top-0 bottom-0 left-0 z-50 w-64 border-r border-slate-200 bg-white flex flex-col h-screen overflow-hidden transition-transform duration-300 ease-in-out shadow-2xl text-slate-800 select-none ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* App Header branding */}
-        <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+        <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
           <div className="space-y-1">
-            <h1 className="text-xl font-extrabold flex items-center gap-2 text-zinc-100">
-              <FileText className="text-zinc-400 w-5 h-5" />
-              <span className="font-display tracking-tight text-zinc-50">TeXCraft</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">v1.0</span>
+            <h1 className="text-xl font-extrabold flex items-center gap-2 text-slate-900">
+              <FileText className="text-slate-500 w-5 h-5" />
+              <span className="font-display tracking-tight text-slate-950">TeXCraft</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">v1.0</span>
             </h1>
-            <p className="text-xs text-zinc-500">Private Browser LaTeX Editor</p>
+            <p className="text-xs text-slate-400">Private Browser LaTeX Editor</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer self-start border border-zinc-800"
+            className="p-1 hover:bg-slate-50 rounded text-slate-400 hover:text-slate-600 transition-all cursor-pointer self-start border border-slate-200"
             title="Close panel"
           >
             <X className="w-4 h-4" />
@@ -114,12 +114,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Resumes List section */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-white">
           <div className="flex justify-between items-center px-2">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">My Resumes</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">My Resumes</span>
             <button 
               onClick={() => setShowAddForm(!showAddForm)}
-              className="p-1 hover:bg-zinc-850 rounded text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer border border-zinc-850"
+              className="p-1 hover:bg-slate-50 rounded text-slate-400 hover:text-slate-600 transition-all cursor-pointer border border-slate-200"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -132,20 +132,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 placeholder="Resume name (e.g. Front-End Dev)"
                 value={newResumeName}
                 onChange={(e) => setNewResumeName(e.target.value)}
-                className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded p-2 focus:outline-none focus:border-zinc-550 text-zinc-100 placeholder-zinc-500 shadow-sm"
+                className="w-full text-xs bg-slate-50 border border-slate-200 rounded p-2 focus:outline-none focus:border-slate-400 text-slate-950 placeholder-slate-400 shadow-xs select-text"
                 autoFocus
               />
               <div className="flex gap-2">
                 <button 
                   type="submit" 
-                  className="flex-1 bg-zinc-100 text-zinc-950 text-xs font-bold py-1.5 px-3 rounded-xl border-2 border-white/60 shadow-[3px_3px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
+                  className="flex-1 bg-[#0284c7] text-white text-xs font-bold py-1.5 px-3.5 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
                 >
                   Create
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 bg-zinc-800 text-zinc-300 text-xs font-semibold py-1.5 px-3 rounded-xl border-2 border-white/60 shadow-[3px_3px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
+                  className="flex-1 bg-slate-100 text-slate-700 text-xs font-semibold py-1.5 px-3.5 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -159,43 +159,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
               return (
                 <div 
                   key={resume.id}
-                  className={`group flex items-center justify-between p-2.5 rounded-lg text-xs transition-all cursor-pointer border ${
+                  className={`group flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
                     isActive 
-                      ? 'bg-zinc-850 border-zinc-750 text-zinc-50 font-semibold' 
-                      : 'text-zinc-400 hover:bg-zinc-850/50 hover:text-zinc-200 border-transparent'
+                      ? 'bg-slate-50 border-slate-200 text-slate-900 font-semibold' 
+                      : 'border-transparent text-slate-600 hover:bg-slate-50/50 hover:text-slate-800'
                   }`}
                   onClick={() => onSelectResume(resume.id)}
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <FileText className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-zinc-200' : 'text-zinc-500'}`} />
-                    <span className="truncate">{resume.name}</span>
+                  <div className="flex items-center gap-2 truncate pr-2">
+                    <FileText className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0284c7]' : 'text-slate-400'}`} />
+                    <span className="text-xs truncate">{resume.name}</span>
                   </div>
 
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onDuplicateResume(resume.id);
                       }}
+                      className="p-1 hover:bg-slate-200/50 rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                       title="Duplicate version"
-                      className="p-0.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-200 border border-zinc-800/40"
                     >
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-3 h-3" />
                     </button>
-                    {resumes.length > 1 && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('Delete this resume version?')) {
-                            onDeleteResume(resume.id);
-                          }
-                        }}
-                        title="Delete version"
-                        className="p-0.5 hover:bg-red-950/30 rounded text-zinc-500 hover:text-red-400 border border-transparent"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteResume(resume.id);
+                      }}
+                      className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                      title="Delete version"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               );
@@ -203,39 +199,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Anonymize bias-reduction switcher */}
-        <div className="p-4 border-t border-zinc-800 bg-zinc-950">
-          <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-            <div className="flex items-center gap-2">
-              {anonymizeMode ? (
-                <EyeOff className="text-zinc-400 w-4 h-4" />
-              ) : (
-                <Eye className="text-zinc-500 w-4 h-4" />
-              )}
-              <div>
-                <p className="text-xs font-semibold text-zinc-200">Anonymize Profile</p>
-                <p className="text-[10px] text-zinc-500">Bias-free review mode</p>
-              </div>
+        {/* Anonymize settings toggle in Sidebar */}
+        <div className="p-4 border-t border-slate-200 space-y-2 bg-white">
+          <div className="flex items-center justify-between px-2">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                {anonymizeMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                Anonymize Data
+              </span>
+              <p className="text-[9px] text-slate-400">Mask personal details in PDF</p>
             </div>
             <button
               onClick={onToggleAnonymize}
               className={`w-9 h-5 rounded-full p-0.5 transition-all cursor-pointer ${
-                anonymizeMode ? 'bg-zinc-100' : 'bg-zinc-800'
+                anonymizeMode ? 'bg-[#0284c7]' : 'bg-slate-200'
               }`}
             >
-              <div className={`w-4 h-4 rounded-full shadow-sm transition-all transform ${
-                anonymizeMode ? 'bg-zinc-950 translate-x-4' : 'bg-zinc-350 translate-x-0'
+              <div className={`w-4 h-4 rounded-full shadow-sm bg-white transition-all transform ${
+                anonymizeMode ? 'translate-x-4' : 'translate-x-0'
               }`} />
             </button>
           </div>
         </div>
 
         {/* Export / Sync Options section */}
-        <div className="p-6 border-t border-zinc-800 space-y-3 bg-zinc-900">
+        <div className="p-6 border-t border-slate-200 space-y-3 bg-slate-50">
           <button
             onClick={triggerDownloadPdf}
             disabled={pdfGenerating}
-            className="w-full flex items-center justify-center gap-2 bg-zinc-100 text-zinc-950 font-bold py-2 px-4 rounded-xl border-2 border-white/60 shadow-[3px_3px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer disabled:opacity-50 text-xs"
+            className="w-full flex items-center justify-center gap-2 bg-[#0284c7] text-white font-bold py-2 px-4 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer disabled:opacity-50 text-xs"
           >
             {pdfGenerating ? (
               <>
@@ -253,23 +245,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onDownloadTex}
-              className="flex items-center justify-center gap-1.5 bg-zinc-800 border-2 border-white/60 text-zinc-300 text-xs font-semibold py-2 px-3 rounded-xl shadow-[3px_3px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
+              className="flex items-center justify-center gap-1.5 bg-slate-100 border-2 border-black text-slate-700 text-xs font-semibold py-2 px-3.5 rounded-full shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-zinc-400" />
+              <Download className="w-3.5 h-3.5 text-slate-500" />
               LaTeX (.tex)
             </button>
             <button
               onClick={handleCopyText}
-              className="flex items-center justify-center gap-1.5 bg-zinc-800 border-2 border-white/60 text-zinc-300 text-xs font-semibold py-2 px-3 rounded-xl shadow-[3px_3px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
+              className="flex items-center justify-center gap-1.5 bg-slate-100 border-2 border-black text-slate-700 text-xs font-semibold py-2 px-3.5 rounded-full shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer"
             >
               {copiedText ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  <Check className="w-3.5 h-3.5 text-green-600" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <Clipboard className="w-3.5 h-3.5 text-zinc-400" />
+                  <Clipboard className="w-3.5 h-3.5 text-slate-500" />
                   Plain Text
                 </>
               )}
@@ -277,9 +269,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Local import/export configuration backup */}
-          <div className="flex gap-2 border-t border-zinc-800 pt-3 text-[11px] text-zinc-500">
-            <label className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 border-2 border-white/60 py-1.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer text-zinc-300">
-              <Upload className="w-3 text-zinc-400" />
+          <div className="flex gap-2 border-t border-slate-200 pt-3 text-[11px] text-slate-400">
+            <label className="flex-1 flex items-center justify-center gap-1 bg-slate-100 border-2 border-black py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer text-slate-700">
+              <Upload className="w-3 h-3 text-slate-500" />
               Import Backup
               <input
                 type="file"
@@ -290,9 +282,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </label>
             <button
               onClick={onExportJson}
-              className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 border-2 border-white/60 py-1.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(255,255,255,0.6)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,0.6)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer text-zinc-300"
+              className="flex-1 flex items-center justify-center gap-1 bg-slate-100 border-2 border-black py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer text-slate-700"
             >
-              <Download className="w-3 h-3 text-zinc-400" />
+              <Download className="w-3 h-3 text-slate-500" />
               Export Backup
             </button>
           </div>

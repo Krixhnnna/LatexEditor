@@ -370,14 +370,14 @@ export const App: React.FC = () => {
 
   if (!activeResume) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0e1117] text-slate-300 font-semibold">
+      <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc] text-slate-700 font-semibold">
         Loading TeXCraft workspace...
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#0e1117] text-slate-100 overflow-hidden relative">
+    <div className="flex h-screen w-screen bg-[#f8fafc] text-slate-800 overflow-hidden relative">
       
       {/* Sidebar Overlay Drawer */}
       <Sidebar 
@@ -413,23 +413,23 @@ export const App: React.FC = () => {
           {/* Left Edit Pane */}
           <div className="w-full lg:w-[var(--left-width)] flex flex-col overflow-hidden h-full pr-0 lg:pr-3 shrink-0">
             {/* Left Edit Pane Header Tabs & Controls */}
-            <div className="flex border-b border-[#212836] pb-2 mb-3.5 items-center justify-between shrink-0">
+            <div className="flex border-b border-slate-200 pb-2 mb-3.5 items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 {/* Menu hamburger trigger */}
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="p-1 hover:bg-[#1f2635] rounded text-slate-400 hover:text-slate-200 transition-colors duration-150 cursor-pointer border border-[#212836] mr-1"
+                  className="p-1 bg-white border-2 border-black hover:bg-slate-50 text-slate-700 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer mr-1.5"
                   title="Open resumes and settings"
                 >
-                  <Menu className="w-3.5 h-3.5" />
+                  <Menu className="w-3.5 h-3.5 text-slate-700" />
                 </button>
 
                 <button
                   onClick={() => setActiveTab('latex')}
                   className={`pb-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer border-b-2 ${
                     activeTab === 'latex' 
-                      ? 'border-[#38bdf8] text-slate-100' 
-                      : 'border-transparent text-slate-500 hover:text-slate-300'
+                      ? 'border-[#0284c7] text-slate-900 font-bold' 
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   Raw LaTeX
@@ -438,8 +438,8 @@ export const App: React.FC = () => {
                   onClick={() => setActiveTab('ats')}
                   className={`pb-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer border-b-2 ${
                     activeTab === 'ats' 
-                      ? 'border-[#38bdf8] text-slate-100' 
-                      : 'border-transparent text-slate-500 hover:text-slate-300'
+                      ? 'border-[#0284c7] text-slate-900 font-bold' 
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   ATS Score
@@ -451,18 +451,18 @@ export const App: React.FC = () => {
                 <button
                   onClick={handleUndo}
                   disabled={historyIndex <= 0}
-                  className="p-1 bg-[#161b24] border border-[#212836] hover:bg-[#1f2635] text-slate-400 hover:text-slate-100 rounded disabled:opacity-30 transition-colors duration-150 cursor-pointer"
+                  className="p-1 bg-white border-2 border-black hover:bg-slate-50 text-slate-700 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer disabled:opacity-30"
                   title="Undo edit (Cmd+Z)"
                 >
-                  <Undo2 className="w-3.5 h-3.5" />
+                  <Undo2 className="w-3.5 h-3.5 text-slate-700" />
                 </button>
                 <button
                   onClick={handleRedo}
                   disabled={historyIndex >= history.length - 1}
-                  className="p-1 bg-[#161b24] border border-[#212836] hover:bg-[#1f2635] text-slate-400 hover:text-slate-100 rounded disabled:opacity-30 transition-colors duration-150 cursor-pointer"
+                  className="p-1 bg-white border-2 border-black hover:bg-slate-50 text-slate-700 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer disabled:opacity-30"
                   title="Redo edit (Cmd+Shift+Z)"
                 >
-                  <Redo2 className="w-3.5 h-3.5" />
+                  <Redo2 className="w-3.5 h-3.5 text-slate-700" />
                 </button>
               </div>
             </div>
@@ -489,13 +489,13 @@ export const App: React.FC = () => {
           {/* Resizable Divider line */}
           <div 
             onMouseDown={startResizing}
-            className={`hidden lg:flex w-2.5 hover:bg-[#212836] active:bg-[#2a3345] cursor-col-resize shrink-0 transition-colors duration-150 select-none h-full items-center justify-center relative group ${
-              isDragging ? 'bg-[#212836]' : 'bg-transparent'
+            className={`hidden lg:flex w-2.5 hover:bg-slate-200 active:bg-slate-300 cursor-col-resize shrink-0 transition-colors duration-150 select-none h-full items-center justify-center relative group ${
+              isDragging ? 'bg-slate-200' : 'bg-transparent'
             }`}
             title="Drag to resize panes"
             style={{ margin: '0 -4px' }}
           >
-            <div className="w-0.5 h-8 bg-[#2a3345] group-hover:bg-slate-500 rounded"></div>
+            <div className="w-0.5 h-8 bg-slate-300 group-hover:bg-slate-500 rounded"></div>
           </div>
 
           {/* Right Live Preview Pane */}

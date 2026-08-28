@@ -42,27 +42,77 @@ const wrapText = (text: string, font: PDFFont, fontSize: number, maxWidth: numbe
   return lines;
 };
 
+// Helper: unescapes LaTeX formatting to raw text
+const unescapeLatex = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/\\textbackslash\{\}/g, '\\')
+    .replace(/\\([&%$#_{}])/g, '$1')
+    .replace(/\\textasciitilde\{\}/g, '~')
+    .replace(/\\textasciicircum\{\}/g, '^')
+    .replace(/\\&/g, '&')
+    .replace(/\\%/g, '%')
+    .replace(/\\\$/g, '$')
+    .replace(/\\#/g, '#')
+    .replace(/\\_/g, '_')
+    .replace(/\\\{/g, '{')
+    .replace(/\\\}/g, '}');
+};
+
+// Helper: extracts curly braces contents considering nested braces
+const extractBraces = (text: string, count: number): string[] => {
+  const results: string[] = [];
+  let pos = 0;
+  for (let i = 0; i < count; i++) {
+    const start = text.indexOf('{', pos);
+    if (start === -1) break;
+    let braceCount = 1;
+    let end = start + 1;
+    while (braceCount > 0 && end < text.length) {
+      if (text[end] === '{') braceCount++;
+      else if (text[end] === '}') braceCount--;
+      end++;
+    }
+    results.push(text.substring(start + 1, end - 1));
+    pos = end;
+  }
+  return results;
+};
+
 export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Array; pageCount: number }> => {
   const pdfDoc = await PDFDocument.create();
+  const latex = resume.latexCode || '';
 
-  // Typography details
-  const t = resume.typography;
-  const paperWidth = t.paperSize === 'a4' ? 595.27 : 612.0; // 210mm vs 8.5in
-  const paperHeight = t.paperSize === 'a4' ? 841.89 : 792.0; // 297mm vs 11in
-  const marginPoints = t.margins * 72; // e.g. 0.5" -> 36pt, 0.75" -> 54pt
+  // 1. Detect typography and layout sizes from the LaTeX code!
+  let fontFamily = 'serif';
+  if (latex.includes('inter') || latex.includes('sans')) {
+    fontFamily = 'sans';
+  }
 
-  // Load fonts
-  const isSerif = t.fontFamily.startsWith('serif');
-  const fontRegular = await pdfDoc.embedStandardFont(isSerif ? StandardFonts.TimesRoman : StandardFonts.Helvetica);
-  const fontBold = await pdfDoc.embedStandardFont(isSerif ? StandardFonts.TimesRomanBold : StandardFonts.HelveticaBold);
-  const fontItalic = await pdfDoc.embedStandardFont(isSerif ? StandardFonts.TimesRomanItalic : StandardFonts.HelveticaOblique);
+  let marginSize = 0.5; // default
+  const marginMatch = latex.match(/margin\s*=\s*([\d.]+)\s*in/i);
+  if (marginMatch) {
+    marginSize = parseFloat(marginMatch[1]);
+  }
 
-  // Spacing details
+  let fontSize = 11; // default
+  const fontClassMatch = latex.match(/\\documentclass\[[^\]]*?(\d+)pt[^\]]*?\]/);
+  if (fontClassMatch) {
+    fontSize = parseInt(fontClassMatch[1]);
+  }
+
+  const paperWidth = latex.includes('a4paper') ? 595.27 : 612.0; // A4 vs Letter
+  const paperHeight = latex.includes('a4paper') ? 841.89 : 792.0;
+  const marginPoints = marginSize * 72;
+
+  const fontRegular = await pdfDoc.embedStandardFont(fontFamily === 'serif' ? StandardFonts.TimesRoman : StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedStandardFont(fontFamily === 'serif' ? StandardFonts.TimesRomanBold : StandardFonts.HelveticaBold);
+  const fontItalic = await pdfDoc.embedStandardFont(fontFamily === 'serif' ? StandardFonts.TimesRomanItalic : StandardFonts.HelveticaOblique);
+
   let spacingFactor = 1.0;
-  if (t.spacing === 'compact') spacingFactor = 0.85;
-  if (t.spacing === 'relaxed') spacingFactor = 1.25;
+  if (latex.includes('spacing=compact')) spacingFactor = 0.85;
+  if (latex.includes('spacing=relaxed')) spacingFactor = 1.25;
 
-  const baseFontSize = t.fontSize; // e.g. 10, 11, 12
   const ctx: LayoutContext = {
     pdfDoc,
     page: pdfDoc.addPage([paperWidth, paperHeight]),
@@ -73,9 +123,9 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     height: paperHeight,
     margin: marginPoints,
     y: paperHeight - marginPoints,
-    fontSize: baseFontSize,
-    lineHeight: baseFontSize * 1.25 * spacingFactor,
-    bulletSpacing: baseFontSize * 0.4,
+    fontSize: fontSize,
+    lineHeight: fontSize * 1.25 * spacingFactor,
+    bulletSpacing: fontSize * 0.4,
     spacingFactor,
     pages: [],
     overflowWarning: false,
@@ -130,356 +180,191 @@ export const generatePdf = async (resume: Resume): Promise<{ pdfBytes: Uint8Arra
     ctx.y -= ctx.lineHeight * 0.9;
   };
 
-  // 1. Draw Heading Block
-  const p = resume.personalDetails;
-  ctx.y -= ctx.lineHeight * 0.5;
+  // 2. Parse LaTeX body
+  const docStart = latex.indexOf('\\begin{document}');
+  const docEnd = latex.indexOf('\\end{document}');
+  const bodyText = docStart !== -1 
+    ? latex.substring(docStart + 16, docEnd !== -1 ? docEnd : latex.length)
+    : latex;
 
-  // Name
-  if (p.name) {
-    const nameSize = ctx.fontSize * 1.8;
-    drawCenteredText(p.name, nameSize, ctx.fontBold);
-    ctx.y -= nameSize * 1.1;
-  }
+  const lines = bodyText.split('\n');
+  let inCenter = false;
 
-  // Contact Info
-  const contactLines: string[] = [];
-  if (p.location) contactLines.push(p.location);
-  if (p.phone) contactLines.push(p.phone);
-  if (p.email) contactLines.push(p.email);
-  const contactStr1 = contactLines.join('  |  ');
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    if (!line || line.startsWith('%')) continue; // skip comments
 
-  const linkLines: string[] = [];
-  if (p.linkedin) linkLines.push(p.linkedin.replace(/^(https?:\/\/)?(www\.)?/, ''));
-  if (p.github) linkLines.push(p.github.replace(/^(https?:\/\/)?(www\.)?/, ''));
-  if (p.website) linkLines.push(p.website.replace(/^(https?:\/\/)?(www\.)?/, ''));
-  const contactStr2 = linkLines.join('  |  ');
-
-  if (contactStr1) {
-    drawCenteredText(contactStr1, ctx.fontSize * 0.85, ctx.fontRegular);
-    ctx.y -= ctx.lineHeight * 0.85;
-  }
-  if (contactStr2) {
-    drawCenteredText(contactStr2, ctx.fontSize * 0.85, ctx.fontRegular);
-    ctx.y -= ctx.lineHeight * 0.85;
-  }
-
-  ctx.y -= ctx.lineHeight * 0.25;
-
-  // 2. Summary
-  if (resume.summary && resume.summary.trim() !== '') {
-    drawSectionHeader('Summary');
-    ensureSpace(ctx.lineHeight * 1.5);
-
-    const maxWidth = ctx.width - ctx.margin * 2;
-    const lines = wrapText(resume.summary, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
-    for (const line of lines) {
-      ensureSpace(ctx.lineHeight);
-      ctx.page.drawText(line, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontRegular,
-        color: rgb(0.15, 0.15, 0.15),
-      });
-      ctx.y -= ctx.lineHeight;
+    // Detect center environment
+    if (line.includes('\\begin{center}')) {
+      inCenter = true;
+      continue;
     }
-  }
-
-  // 3. Experience
-  const visibleExperience = resume.experience.filter(item => !item.isHidden);
-  if (visibleExperience.length > 0) {
-    drawSectionHeader('Experience');
-
-    for (const exp of visibleExperience) {
-      ensureSpace(ctx.lineHeight * 2.2);
-
-      // Row 1: Company + Location
-      ctx.page.drawText(exp.company, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize,
-        font: ctx.fontBold,
-      });
-
-      const locWidth = ctx.fontRegular.widthOfTextAtSize(exp.location, ctx.fontSize);
-      ctx.page.drawText(exp.location, {
-        x: ctx.width - ctx.margin - locWidth,
-        y: ctx.y,
-        size: ctx.fontSize,
-        font: ctx.fontRegular,
-      });
-
-      ctx.y -= ctx.lineHeight;
-
-      // Row 2: Role + Dates
-      ctx.page.drawText(exp.role, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontItalic,
-      });
-
-      const dateStr = `${exp.startDate} -- ${exp.endDate}`;
-      const dateWidth = ctx.fontRegular.widthOfTextAtSize(dateStr, ctx.fontSize - 0.5);
-      ctx.page.drawText(dateStr, {
-        x: ctx.width - ctx.margin - dateWidth,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontRegular,
-      });
-
-      ctx.y -= ctx.lineHeight * 0.8;
-
-      // Bullets
-      const maxWidth = ctx.width - ctx.margin * 2 - 12; // indentation
-      for (const bullet of exp.bullets) {
-        if (!bullet.trim()) continue;
-
-        const bulletLines = wrapText(bullet, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
-        for (let i = 0; i < bulletLines.length; i++) {
-          ensureSpace(ctx.lineHeight);
-
-          // Draw bullet point indicator on first line
-          if (i === 0) {
-            ctx.page.drawText('•', {
-              x: ctx.margin + 4,
-              y: ctx.y,
-              size: ctx.fontSize - 0.5,
-              font: ctx.fontRegular,
-            });
-          }
-
-          ctx.page.drawText(bulletLines[i], {
-            x: ctx.margin + 12,
-            y: ctx.y,
-            size: ctx.fontSize - 0.5,
-            font: ctx.fontRegular,
-            color: rgb(0.15, 0.15, 0.15),
-          });
-          ctx.y -= ctx.lineHeight;
-        }
-      }
-      ctx.y -= ctx.lineHeight * 0.2; // separation between jobs
+    if (line.includes('\\end{center}')) {
+      inCenter = false;
+      continue;
     }
-  }
 
-  // 4. Projects
-  const visibleProjects = resume.projects.filter(item => !item.isHidden);
-  if (visibleProjects.length > 0) {
-    drawSectionHeader('Projects');
-
-    for (const proj of visibleProjects) {
-      ensureSpace(ctx.lineHeight * 2.0);
-
-      // Title + Tech stack (bold title, italic tech stack)
-      const titleStr = proj.title;
-      const techStr = proj.roleOrTech ? ` | ${proj.roleOrTech}` : '';
-
-      ctx.page.drawText(titleStr, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize,
-        font: ctx.fontBold,
-      });
-
-      const titleWidth = ctx.fontBold.widthOfTextAtSize(titleStr, ctx.fontSize);
-      if (techStr) {
-        ctx.page.drawText(techStr, {
-          x: ctx.margin + titleWidth,
-          y: ctx.y,
-          size: ctx.fontSize - 0.5,
-          font: ctx.fontItalic,
-          color: rgb(0.3, 0.3, 0.3),
-        });
-      }
-
-      // Link on the right
-      const linkWidth = ctx.fontRegular.widthOfTextAtSize(proj.link, ctx.fontSize - 0.5);
-      ctx.page.drawText(proj.link, {
-        x: ctx.width - ctx.margin - linkWidth,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontRegular,
-      });
-
-      ctx.y -= ctx.lineHeight * 0.9;
-
-      // Bullets
-      const maxWidth = ctx.width - ctx.margin * 2 - 12;
-      for (const bullet of proj.bullets) {
-        if (!bullet.trim()) continue;
-
-        const bulletLines = wrapText(bullet, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
-        for (let i = 0; i < bulletLines.length; i++) {
-          ensureSpace(ctx.lineHeight);
-
-          if (i === 0) {
-            ctx.page.drawText('•', {
-              x: ctx.margin + 4,
-              y: ctx.y,
-              size: ctx.fontSize - 0.5,
-              font: ctx.fontRegular,
-            });
-          }
-
-          ctx.page.drawText(bulletLines[i], {
-            x: ctx.margin + 12,
-            y: ctx.y,
-            size: ctx.fontSize - 0.5,
-            font: ctx.fontRegular,
-            color: rgb(0.15, 0.15, 0.15),
-          });
-          ctx.y -= ctx.lineHeight;
-        }
-      }
-      ctx.y -= ctx.lineHeight * 0.2;
+    // Parse section heading
+    if (line.startsWith('\\section{')) {
+      const sectionName = extractBraces(line, 1)[0] || '';
+      drawSectionHeader(unescapeLatex(sectionName));
+      continue;
     }
-  }
 
-  // 5. Skills
-  const visibleSkills = resume.skills.filter(item => !item.isHidden);
-  if (visibleSkills.length > 0) {
-    drawSectionHeader('Technical Skills');
+    // Parse resumeSubheading
+    if (line.includes('\\resumeSubheading')) {
+      const args = extractBraces(line, 4);
+      if (args.length > 0) {
+        const company = unescapeLatex(args[0]);
+        const location = unescapeLatex(args[1] || '');
+        const role = unescapeLatex(args[2] || '');
+        const dates = unescapeLatex(args[3] || '');
 
-    for (const skill of visibleSkills) {
-      ensureSpace(ctx.lineHeight * 1.2);
-
-      const catText = `${skill.category}: `;
-      const catWidth = ctx.fontBold.widthOfTextAtSize(catText, ctx.fontSize - 0.5);
-
-      ctx.page.drawText(catText, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontBold,
-      });
-
-      const itemsText = skill.items.join(', ');
-      const maxWidth = ctx.width - ctx.margin * 2 - catWidth;
-      const skillLines = wrapText(itemsText, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
-
-      for (let i = 0; i < skillLines.length; i++) {
-        if (i > 0) {
-          ensureSpace(ctx.lineHeight);
-        }
-        ctx.page.drawText(skillLines[i], {
-          x: i === 0 ? ctx.margin + catWidth : ctx.margin,
-          y: ctx.y,
-          size: ctx.fontSize - 0.5,
-          font: ctx.fontRegular,
-          color: rgb(0.15, 0.15, 0.15),
-        });
+        ensureSpace(ctx.lineHeight * 2.2);
+        // Row 1: Company + Location
+        ctx.page.drawText(company, { x: ctx.margin, y: ctx.y, size: ctx.fontSize, font: ctx.fontBold });
+        const locWidth = ctx.fontRegular.widthOfTextAtSize(location, ctx.fontSize);
+        ctx.page.drawText(location, { x: ctx.width - ctx.margin - locWidth, y: ctx.y, size: ctx.fontSize, font: ctx.fontRegular });
         ctx.y -= ctx.lineHeight;
+
+        // Row 2: Role + Dates
+        ctx.page.drawText(role, { x: ctx.margin, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontItalic });
+        const dateWidth = ctx.fontRegular.widthOfTextAtSize(dates, ctx.fontSize - 0.5);
+        ctx.page.drawText(dates, { x: ctx.width - ctx.margin - dateWidth, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular });
+        ctx.y -= ctx.lineHeight * 0.8;
       }
-      ctx.y -= ctx.lineHeight * 0.1;
+      continue;
     }
-  }
 
-  // 6. Education
-  const visibleEducation = resume.education.filter(item => !item.isHidden);
-  if (visibleEducation.length > 0) {
-    drawSectionHeader('Education');
+    // Parse resumeProjectHeading
+    if (line.includes('\\resumeProjectHeading')) {
+      const args = extractBraces(line, 2);
+      if (args.length > 0) {
+        const titleTechCombined = args[0];
+        const link = unescapeLatex(args[1] || '');
 
-    for (const edu of visibleEducation) {
-      ensureSpace(ctx.lineHeight * 2.2);
+        let title = '';
+        let tech = '';
+        const boldMatch = titleTechCombined.match(/\\textbf\{([^}]+)\}/);
+        if (boldMatch) title = unescapeLatex(boldMatch[1]);
+        const emphMatch = titleTechCombined.match(/\\emph\{([^}]+)\}/) || titleTechCombined.match(/\\textit\{([^}]+)\}/);
+        if (emphMatch) tech = unescapeLatex(emphMatch[1]);
 
-      // Institution + Location
-      ctx.page.drawText(edu.institution, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize,
-        font: ctx.fontBold,
-      });
+        if (!title) {
+          const parts = titleTechCombined.split(/(?:\$\|\$|\||--)/).map(p => p.replace(/\\[\w]+/g, '').replace(/[{}]/g, '').trim());
+          title = unescapeLatex(parts[0]);
+          if (parts.length > 1) tech = unescapeLatex(parts[1]);
+        }
 
-      const locWidth = ctx.fontRegular.widthOfTextAtSize(edu.location, ctx.fontSize);
-      ctx.page.drawText(edu.location, {
-        x: ctx.width - ctx.margin - locWidth,
-        y: ctx.y,
-        size: ctx.fontSize,
-        font: ctx.fontRegular,
-      });
-
-      ctx.y -= ctx.lineHeight;
-
-      // Degree/Major + GPA + Graduation Date
-      const degreeStr = `${edu.degree} in ${edu.major}${edu.gpa ? ` (GPA: ${edu.gpa})` : ''}`;
-      ctx.page.drawText(degreeStr, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontItalic,
-      });
-
-      const gradWidth = ctx.fontRegular.widthOfTextAtSize(edu.graduationDate, ctx.fontSize - 0.5);
-      ctx.page.drawText(edu.graduationDate, {
-        x: ctx.width - ctx.margin - gradWidth,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontRegular,
-      });
-
-      ctx.y -= ctx.lineHeight * 1.2;
+        ensureSpace(ctx.lineHeight * 1.5);
+        ctx.page.drawText(title, { x: ctx.margin, y: ctx.y, size: ctx.fontSize, font: ctx.fontBold });
+        const titleWidth = ctx.fontBold.widthOfTextAtSize(title, ctx.fontSize);
+        if (tech) {
+          ctx.page.drawText(` | ${tech}`, { x: ctx.margin + titleWidth, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontItalic, color: rgb(0.3, 0.3, 0.3) });
+        }
+        const linkWidth = ctx.fontRegular.widthOfTextAtSize(link, ctx.fontSize - 0.5);
+        ctx.page.drawText(link, { x: ctx.width - ctx.margin - linkWidth, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular });
+        ctx.y -= ctx.lineHeight * 0.9;
+      }
+      continue;
     }
-  }
 
-  // 7. Certifications
-  const visibleCertifications = resume.certifications.filter(item => !item.isHidden);
-  if (visibleCertifications.length > 0) {
-    drawSectionHeader('Certifications');
+    // Parse resumeItem
+    if (line.includes('\\resumeItem') || line.startsWith('\\item')) {
+      let bulletText = '';
+      if (line.includes('\\resumeItem')) {
+        bulletText = extractBraces(line, 1)[0] || '';
+      } else {
+        bulletText = line.substring(5).trim();
+      }
+      bulletText = unescapeLatex(bulletText);
 
-    for (const cert of visibleCertifications) {
-      ensureSpace(ctx.lineHeight * 1.5);
-
-      const titleStr = `${cert.name} -- `;
-      const issuerStr = cert.issuer;
-
-      ctx.page.drawText(titleStr, {
-        x: ctx.margin,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontBold,
-      });
-
-      const titleWidth = ctx.fontBold.widthOfTextAtSize(titleStr, ctx.fontSize - 0.5);
-      ctx.page.drawText(issuerStr, {
-        x: ctx.margin + titleWidth,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontItalic,
-      });
-
-      const dateWidth = ctx.fontRegular.widthOfTextAtSize(cert.date, ctx.fontSize - 0.5);
-      ctx.page.drawText(cert.date, {
-        x: ctx.width - ctx.margin - dateWidth,
-        y: ctx.y,
-        size: ctx.fontSize - 0.5,
-        font: ctx.fontRegular,
-      });
-
-      ctx.y -= ctx.lineHeight * 1.1;
+      if (bulletText) {
+        const maxWidth = ctx.width - ctx.margin * 2 - 12;
+        const bulletLines = wrapText(bulletText, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
+        for (let i = 0; i < bulletLines.length; i++) {
+          ensureSpace(ctx.lineHeight);
+          if (i === 0) {
+            ctx.page.drawText('•', { x: ctx.margin + 4, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular });
+          }
+          ctx.page.drawText(bulletLines[i], { x: ctx.margin + 12, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular, color: rgb(0.15, 0.15, 0.15) });
+          ctx.y -= ctx.lineHeight;
+        }
+      }
+      continue;
     }
-  }
 
-  // 8. Custom Sections
-  const visibleCustom = resume.customSections.filter(item => !item.isHidden);
-  if (visibleCustom.length > 0) {
-    for (const custom of visibleCustom) {
-      if (!custom.heading || !custom.content) continue;
+    // Center header parsing
+    if (inCenter) {
+      let cleanLine = line.replace(/\\\\/g, '').replace(/\\vspace\{[^}]*\}/g, '').trim();
 
-      drawSectionHeader(custom.heading);
-      ensureSpace(ctx.lineHeight * 1.5);
+      if (cleanLine.includes('\\Huge')) {
+        const nameMatch = cleanLine.match(/\\textbf\s*\{\\Huge\s*(?:\\scshape)?\s*([^{}]+)\}/i) || cleanLine.match(/\\textbf\{([^}]+)\}/);
+        const name = nameMatch ? unescapeLatex(nameMatch[1].trim()) : cleanLine.replace(/\\[\w]+/g, '').replace(/[{}]/g, '').trim();
+        if (name) {
+          const nameSize = ctx.fontSize * 1.8;
+          ensureSpace(nameSize * 1.2);
+          drawCenteredText(name, nameSize, ctx.fontBold);
+          ctx.y -= nameSize * 1.1;
+        }
+      } else {
+        let formattedLine = cleanLine
+          .replace(/\\href\s*\{[^}]*\}\s*\{\\underline\{([^}]+)\}\}/g, '$1')
+          .replace(/\\href\s*\{[^}]*\}\s*\{([^}]+)\}/g, '$1')
+          .replace(/\\underline\{([^}]+)\}/g, '$1')
+          .replace(/\\small/g, '')
+          .replace(/[{}]/g, '')
+          .replace(/\s*\$\|\$\s*/g, '  |  ')
+          .replace(/\s*\|\s*/g, '  |  ')
+          .trim();
+        
+        formattedLine = unescapeLatex(formattedLine);
+        if (formattedLine) {
+          ensureSpace(ctx.lineHeight);
+          drawCenteredText(formattedLine, ctx.fontSize * 0.85, ctx.fontRegular);
+          ctx.y -= ctx.lineHeight * 0.85;
+        }
+      }
+      continue;
+    }
 
+    // Parse technical skills line
+    if (line.includes('\\textbf{') && line.includes('}:')) {
+      const catMatch = line.match(/\\textbf\{([^}]+)\}:/);
+      if (catMatch) {
+        const category = unescapeLatex(catMatch[1]);
+        const items = unescapeLatex(line.substring(line.indexOf('}:') + 2).trim());
+
+        ensureSpace(ctx.lineHeight * 1.2);
+        const catText = `${category}: `;
+        const catWidth = ctx.fontBold.widthOfTextAtSize(catText, ctx.fontSize - 0.5);
+        ctx.page.drawText(catText, { x: ctx.margin, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontBold });
+
+        const maxWidth = ctx.width - ctx.margin * 2 - catWidth;
+        const skillLines = wrapText(items, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
+        for (let j = 0; j < skillLines.length; j++) {
+          if (j > 0) ensureSpace(ctx.lineHeight);
+          ctx.page.drawText(skillLines[j], { x: j === 0 ? ctx.margin + catWidth : ctx.margin, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular, color: rgb(0.15, 0.15, 0.15) });
+          ctx.y -= ctx.lineHeight;
+        }
+      }
+      continue;
+    }
+
+    // Parse standard text paragraph
+    let plainParagraph = line
+      .replace(/\\small\{([^}]+)\}/g, '$1')
+      .replace(/\\small/g, '')
+      .replace(/[{}]/g, '')
+      .trim();
+
+    plainParagraph = unescapeLatex(plainParagraph);
+    if (plainParagraph && !plainParagraph.startsWith('\\')) {
       const maxWidth = ctx.width - ctx.margin * 2;
-      const lines = wrapText(custom.content, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
-      for (const line of lines) {
+      const wrapLines = wrapText(plainParagraph, ctx.fontRegular, ctx.fontSize - 0.5, maxWidth);
+      for (const wl of wrapLines) {
         ensureSpace(ctx.lineHeight);
-        ctx.page.drawText(line, {
-          x: ctx.margin,
-          y: ctx.y,
-          size: ctx.fontSize - 0.5,
-          font: ctx.fontRegular,
-          color: rgb(0.15, 0.15, 0.15),
-        });
+        ctx.page.drawText(wl, { x: ctx.margin, y: ctx.y, size: ctx.fontSize - 0.5, font: ctx.fontRegular, color: rgb(0.15, 0.15, 0.15) });
         ctx.y -= ctx.lineHeight;
       }
     }

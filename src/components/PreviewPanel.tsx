@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -152,17 +152,27 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       
       {/* Floating compilation indicator status overlay */}
       <div className="absolute top-3 right-3 z-10 flex gap-2 pointer-events-none select-none">
-        {(compiling || loadingPdf) && (
-          <span className="text-[9px] font-bold uppercase bg-white/95 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1.5 animate-pulse">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0284c7]" /> Compiling
-          </span>
-        )}
         {pageCount > 1 && !compiling && (
           <span className="text-[9px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-250 px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1.5">
             <AlertCircle className="w-3 h-3 text-amber-500" /> Overflows Page ({pageCount} pgs)
           </span>
         )}
       </div>
+
+      {/* Premium Full-Screen Loading Overlay */}
+      {(compiling || loadingPdf) && (
+        <div className="absolute inset-0 bg-white/85 backdrop-blur-xs flex flex-col items-center justify-center z-20 select-none">
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative flex items-center justify-center w-8 h-8">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#0284c7]"></div>
+              <div className="absolute w-8 h-8 rounded-full bg-[#0284c7]/35 animate-ping"></div>
+            </div>
+            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+              Compiling...
+            </span>
+          </div>
+        </div>
+      )}
 
       {pdfError ? (
         <div className="w-full h-full flex flex-col p-4 bg-[#f8fafc] overflow-y-auto">
@@ -189,9 +199,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </div>
         </div>
       ) : (
-        <div className="h-full flex flex-col items-center justify-center bg-transparent select-none">
-          <RefreshCw className="w-6 h-6 text-[#0284c7] animate-spin mb-2" />
-          <p className="text-slate-500 text-[11px] font-semibold">Compiling LaTeX Engine...</p>
+        <div className="h-full flex flex-col items-center justify-center bg-transparent select-none gap-2">
+          <div className="relative flex items-center justify-center w-8 h-8">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#0284c7]"></div>
+            <div className="absolute w-8 h-8 rounded-full bg-[#0284c7]/35 animate-ping"></div>
+          </div>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Compiling...</p>
         </div>
       )}
     </div>

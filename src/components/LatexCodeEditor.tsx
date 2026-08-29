@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { validateLatex } from '../utils/latexParser';
 import type { LatexError } from '../utils/latexParser';
 import { AlertCircle, AlertTriangle, Play, Sparkles, ChevronUp } from 'lucide-react';
@@ -6,12 +6,58 @@ import { AlertCircle, AlertTriangle, Play, Sparkles, ChevronUp } from 'lucide-re
 interface LatexCodeEditorProps {
   code: string;
   onChange: (updatedCode: string) => void;
+  targetScrollLine?: { line: number; timestamp: number } | null;
 }
 
-export const LatexCodeEditor: React.FC<LatexCodeEditorProps> = ({ code, onChange }) => {
+export const LatexCodeEditor: React.FC<LatexCodeEditorProps> = ({ code, onChange, targetScrollLine }) => {
   const [errors, setErrors] = useState<LatexError[]>([]);
   const [editorVal, setEditorVal] = useState(code);
   const [collapsed, setCollapsed] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync scrolling/highlighting when double-clicked in PDF Preview
+  useEffect(() => {
+    if (targetScrollLine && textareaRef.current) {
+      const textarea = textareaRef.current;
+      const lines = editorVal.split('\n');
+      const targetLine = targetScrollLine.line;
+
+      console.log(`[Synctex Editor] targetScrollLine received line: ${targetLine}`, {
+        totalLines: lines.length,
+        hasTextarea: !!textarea
+      });
+
+      if (targetLine >= 0 && targetLine < lines.length) {
+        let startChar = 0;
+        for (let i = 0; i < targetLine; i++) {
+          startChar += lines[i].length + 1; // +1 for the newline character
+        }
+
+        const endChar = startChar + lines[targetLine].length;
+
+        console.log(`[Synctex Editor] Highlighting text selection range:`, {
+          lineText: lines[targetLine],
+          startChar,
+          endChar
+        });
+
+        // Focus and select range to highlight the line
+        textarea.focus();
+        textarea.setSelectionRange(startChar, endChar);
+
+        // Center the selected line in viewport
+        const computedLineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight);
+        const lineHeight = isNaN(computedLineHeight) ? 18 : computedLineHeight;
+        
+        const targetScrollTop = targetLine * lineHeight - textarea.clientHeight / 2;
+        textarea.scrollTop = Math.max(0, targetScrollTop);
+
+        console.log(`[Synctex Editor] Scrolled textarea to scrollTop: ${textarea.scrollTop} (targetScrollTop calculated: ${targetScrollTop.toFixed(1)}, lineHeight: ${lineHeight})`);
+      } else {
+        console.warn(`[Synctex Editor] Target line index ${targetLine} is out of bounds [0, ${lines.length}).`);
+      }
+    }
+  }, [targetScrollLine]);
 
   useEffect(() => {
     setEditorVal(code);
@@ -71,6 +117,7 @@ export const LatexCodeEditor: React.FC<LatexCodeEditorProps> = ({ code, onChange
 
         {/* Text Area */}
         <textarea
+          ref={textareaRef}
           value={editorVal}
           onChange={(e) => handleTextChange(e.target.value)}
           className="flex-1 bg-transparent p-2 font-mono text-xs text-slate-800 leading-relaxed outline-none border-none resize-none overflow-y-auto whitespace-pre focus:ring-0 select-text"

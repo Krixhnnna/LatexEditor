@@ -14,8 +14,80 @@ import { generatePdf } from './utils/pdfGenerator';
 import { 
   Undo2, Redo2, Menu
 } from 'lucide-react';
+import { WorkspaceLoader } from './components/WorkspaceLoader';
+
+// Helper function to find the best matching line in LaTeX code for a clicked text snippet
+const findBestLineInLatex = (latex: string, targetText: string): number => {
+  const cleanTarget = targetText.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!cleanTarget) return -1;
+  
+  const lines = latex.split('\n');
+  let bestLineIdx = -1;
+  let maxScore = 0;
+
+  // Split into words, filtering out only single characters (keep words of length >= 2)
+  const targetWords = cleanTarget.split(' ').filter(w => w.length >= 2);
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    
+    // Skip comment lines in LaTeX
+    if (rawLine.trim().startsWith('%')) continue;
+    
+    // Clean up LaTeX line: strip backslashes, common formatting commands, braces
+    const cleanLine = rawLine
+      .toLowerCase()
+      .replace(/\\(section|subsection|textbf|textit|role|item|skills|education|experience|project|heading)/g, ' ')
+      .replace(/[^a-z0-9]/g, ' ')
+      .replace(/\s+/g, ' ');
+
+    // 1. Direct match check
+    if (cleanLine.includes(cleanTarget)) {
+      console.log(`[Synctex App] Exact match found on line ${i + 1}: "${rawLine.trim()}"`);
+      return i;
+    }
+
+    // 2. Overlapping words check
+    let score = 0;
+    if (targetWords.length > 0) {
+      for (const word of targetWords) {
+        if (cleanLine.includes(word)) {
+          score += word.length;
+        }
+      }
+    }
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestLineIdx = i;
+    }
+  }
+
+  if (maxScore > 0 && bestLineIdx !== -1) {
+    console.log(`[Synctex App] Best word-overlap match found on line ${bestLineIdx + 1} (score: ${maxScore}): "${lines[bestLineIdx].trim()}"`);
+    return bestLineIdx;
+  }
+
+  console.log(`[Synctex App] No match found in LaTeX for text: "${targetText}"`);
+  return -1;
+};
 
 export const App: React.FC = () => {
+  // --- Workspace Loader State ---
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [showLoader, setShowLoader] = useState<boolean>(true);
+  
+  // --- Synctex Scroll Highlight state ---
+  const [targetScrollLine, setTargetScrollLine] = useState<{ line: number; timestamp: number } | null>(null);
+
+  // Minimum load duration for workspace entrance animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   // --- Core State ---
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [activeId, setActiveId] = useState<string>('');
@@ -61,6 +133,15 @@ export const App: React.FC = () => {
   }, []);
 
   const activeResume = resumes.find(r => r.id === activeId) || resumes[0];
+
+  useEffect(() => {
+    if (!initialLoading && activeResume) {
+      const fadeTimer = setTimeout(() => {
+        setShowLoader(false);
+      }, 300); // match WorkspaceLoader transition duration
+      return () => clearTimeout(fadeTimer);
+    }
+  }, [initialLoading, activeResume]);
 
   // --- 2. Populate LaTeX code if empty (on load or template change) ---
   useEffect(() => {
@@ -339,6 +420,21 @@ export const App: React.FC = () => {
     saveJdText(text);
   };
 
+  const handleLocateText = (targetText: string) => {
+    if (!activeResume || !activeResume.latexCode) {
+      console.warn("[Synctex App] handleLocateText ignored: activeResume or latexCode is falsy.");
+      return;
+    }
+    console.log(`[Synctex App] Attempting to locate text: "${targetText}"`);
+    const lineIndex = findBestLineInLatex(activeResume.latexCode, targetText);
+    if (lineIndex !== -1) {
+      console.log(`[Synctex App] Propagating targetScrollLine line index ${lineIndex} to Editor.`);
+      setTargetScrollLine({ line: lineIndex, timestamp: Date.now() });
+    } else {
+      console.warn(`[Synctex App] Could not find matching line for "${targetText}".`);
+    }
+  };
+
   // --- 9. Resizable Split Pane Mouse Resizers ---
   const startResizing = (mouseDownEvent: React.MouseEvent) => {
     mouseDownEvent.preventDefault();
@@ -368,12 +464,8 @@ export const App: React.FC = () => {
     };
   }, [isDragging]);
 
-  if (!activeResume) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc] text-slate-700 font-semibold">
-        Loading TeXCraft workspace...
-      </div>
-    );
+  if (showLoader || !activeResume) {
+    return <WorkspaceLoader isFading={!initialLoading && !!activeResume} />;
   }
 
   return (
@@ -472,7 +564,8 @@ export const App: React.FC = () => {
               {activeTab === 'latex' && (
                 <LatexCodeEditor 
                   code={activeResume.latexCode} 
-                  onChange={handleLatexCodeChange} 
+                  onChange={handleLatexCodeChange}
+                  targetScrollLine={targetScrollLine}
                 />
               )}
               {activeTab === 'ats' && (
@@ -506,6 +599,7 @@ export const App: React.FC = () => {
               isDragging={isDragging} 
               compiling={compiling}
               pageCount={pageCount}
+              onLocateText={handleLocateText}
             />
           </div>
         </div>

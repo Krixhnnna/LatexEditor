@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { CompilingLoader } from './CompilingLoader';
 
 declare global {
   interface Window {
@@ -13,6 +14,7 @@ interface PreviewPanelProps {
   isDragging: boolean;
   compiling: boolean;
   pageCount: number;
+  onLocateText?: (text: string) => void;
 }
 
 interface PdfPageCanvasProps {
@@ -72,7 +74,7 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({ pdf, pageNum, width, heig
   return (
     <canvas 
       ref={canvasRef} 
-      className="shadow-sm border border-slate-300 bg-white rounded-xs select-none pointer-events-none"
+      className="shadow-sm border border-slate-300 bg-white rounded-xs select-none cursor-pointer"
     />
   );
 };
@@ -82,12 +84,94 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   pdfError, 
   isDragging: _isDragging,
   compiling,
-  pageCount
+  pageCount,
+  onLocateText
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 800 });
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+
+  const handleCanvasDoubleClick = async (e: React.MouseEvent<HTMLDivElement>, pageNum: number) => {
+    if (!pdfDoc || !onLocateText) {
+      console.warn("[Synctex] Double-click ignored: pdfDoc or onLocateText is falsy.", { hasDoc: !!pdfDoc, hasCallback: !!onLocateText });
+      return;
+    }
+
+    // Extract event details synchronously before any asynchronous operations,
+    // preventing React from recycling/nullifying event properties.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.0 });
+
+      // Get click coordinates relative to the container element
+      const clickX = clientX - rect.left;
+      const clickY = clientY - rect.top;
+
+      // Calculate percentage coordinates
+      const pctX = clickX / rect.width;
+      const pctY = clickY / rect.height;
+
+      // Translate coordinates to PDF space (Y starts from bottom in PDF)
+      const pdfX = pctX * viewport.width;
+      const pdfY = (1.0 - pctY) * viewport.height;
+
+      console.log(`[Synctex] Click on Page ${pageNum}:`, {
+        click: { x: clickX.toFixed(1), y: clickY.toFixed(1) },
+        percent: { x: (pctX * 100).toFixed(1) + "%", y: (pctY * 100).toFixed(1) + "%" },
+        pdfPoints: { x: pdfX.toFixed(1), y: pdfY.toFixed(1) },
+        pageSize: { width: viewport.width, height: viewport.height }
+      });
+
+      // Extract text content
+      const textContent = await page.getTextContent();
+      let closestItem: any = null;
+      let minDistance = Infinity;
+
+      for (const item of textContent.items) {
+        if (!item.str || item.str.trim() === '') continue;
+
+        const itemX = item.transform[4];
+        const itemY = item.transform[5];
+        const itemWidth = item.width || 0;
+        const itemHeight = item.height || Math.abs(item.transform[3]) || 10;
+
+        // Bounding box check
+        const isWithinX = pdfX >= itemX - 5 && pdfX <= itemX + itemWidth + 5;
+        const isWithinY = pdfY >= itemY - 2 && pdfY <= itemY + itemHeight + 5;
+
+        if (isWithinX && isWithinY) {
+          closestItem = item;
+          console.log(`[Synctex] Exact hit text item:`, { text: item.str, bounds: { x: itemX, y: itemY, w: itemWidth, h: itemHeight } });
+          break;
+        }
+
+        // Distance check
+        const dx = pdfX - (itemX + itemWidth / 2);
+        const dy = pdfY - (itemY + itemHeight / 2);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestItem = item;
+        }
+      }
+
+      if (closestItem && closestItem.str.trim()) {
+        const targetText = closestItem.str.trim();
+        console.log(`[Synctex] Target text selected (minDist: ${minDistance.toFixed(1)}): "${targetText}"`);
+        onLocateText(targetText);
+      } else {
+        console.warn("[Synctex] No text items found on page.");
+      }
+    } catch (err) {
+      console.error('[Synctex] Error during double click text lookup:', err);
+    }
+  };
 
   // Measure container dimensions dynamically
   useEffect(() => {
@@ -160,19 +244,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       </div>
 
       {/* Premium Full-Screen Loading Overlay */}
-      {(compiling || loadingPdf) && (
-        <div className="absolute inset-0 bg-white/85 backdrop-blur-xs flex flex-col items-center justify-center z-20 select-none">
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative flex items-center justify-center w-8 h-8">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#0284c7]"></div>
-              <div className="absolute w-8 h-8 rounded-full bg-[#0284c7]/35 animate-ping"></div>
-            </div>
-            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-              Compiling...
-            </span>
-          </div>
-        </div>
-      )}
+      {(compiling || loadingPdf) && <CompilingLoader />}
 
       {pdfError ? (
         <div className="w-full h-full flex flex-col p-4 bg-[#f8fafc] overflow-y-auto">
@@ -188,24 +260,23 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <div className="w-full h-full overflow-hidden flex items-center justify-center p-0">
           <div className="flex flex-col gap-0 items-center justify-center">
             {Array.from({ length: pdfDoc.numPages }).map((_, idx) => (
-              <PdfPageCanvas
+              <div
                 key={`${pdfUrl}-page-${idx + 1}`}
-                pdf={pdfDoc}
-                pageNum={idx + 1}
-                width={wrapperW}
-                height={wrapperH}
-              />
+                onDoubleClick={(e) => handleCanvasDoubleClick(e, idx + 1)}
+                className="relative cursor-pointer select-text border border-slate-200 bg-white rounded-sm shadow-xs mb-4"
+              >
+                <PdfPageCanvas
+                  pdf={pdfDoc}
+                  pageNum={idx + 1}
+                  width={wrapperW}
+                  height={wrapperH}
+                />
+              </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="h-full flex flex-col items-center justify-center bg-transparent select-none gap-2">
-          <div className="relative flex items-center justify-center w-8 h-8">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#0284c7]"></div>
-            <div className="absolute w-8 h-8 rounded-full bg-[#0284c7]/35 animate-ping"></div>
-          </div>
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Compiling...</p>
-        </div>
+        <CompilingLoader />
       )}
     </div>
   );
